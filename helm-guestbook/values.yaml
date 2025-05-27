@@ -5,9 +5,11 @@
 replicaCount: 1
 
 image:
-  repository: gcr.io/heptio-images/ks-guestbook-demo
+  repository: quay.io/argoprojlabs/argocd-e2e-container
   tag: 0.1
   pullPolicy: IfNotPresent
+
+containerPort: 80
 
 service:
   type: ClusterIP
