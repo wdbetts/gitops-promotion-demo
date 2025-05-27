@@ -45,9 +45,9 @@ sleep 10
 
 # Get service URLs
 echo "Getting service URLs..."
-DEV_PORT=$(kubectl get svc -n dev gitops-demo-guestbook -o jsonpath='{.spec.ports[0].nodePort}')
-STAGING_PORT=$(kubectl get svc -n staging gitops-demo-guestbook -o jsonpath='{.spec.ports[0].nodePort}')
-PROD_PORT=$(kubectl get svc -n prod gitops-demo-guestbook -o jsonpath='{.spec.ports[0].nodePort}')
+DEV_PORT=$(kubectl get svc -n guestbook-dev guestbook-dev -o jsonpath='{.spec.ports[0].nodePort}')
+STAGING_PORT=$(kubectl get svc -n guestbook-staging guestbook-staging -o jsonpath='{.spec.ports[0].nodePort}')
+PROD_PORT=$(kubectl get svc -n guestbook-prod guestbook-prod -o jsonpath='{.spec.ports[0].nodePort}')
 
 echo -e "\n\n========================================"
 echo "Demo Setup Complete!"
