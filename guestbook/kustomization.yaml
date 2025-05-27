@@ -1,4 +1,0 @@
-# filepath: guestbook/kustomization.yaml
-resources:
-  - guestbook-ui-deployment.yaml
-  - guestbook-ui-svc.yaml
