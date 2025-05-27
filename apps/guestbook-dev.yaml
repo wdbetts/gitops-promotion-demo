@@ -8,13 +8,18 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
-  syncPolicy:
-    automated: {}
+  source:
+    repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
+    path: env-configs/dev
   sourceHydrator:
     drySource:
       repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
       targetRevision: HEAD
-      path: env-configs/dev
+      path: helm-guestbook
     syncSource:
       targetBranch: environments/dev
       path: env-configs/dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

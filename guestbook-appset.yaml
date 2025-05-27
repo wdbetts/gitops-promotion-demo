@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: guestbook-appset
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+        - name: dev
+          namespace: dev
+          branch: environments/dev
+        - name: staging
+          namespace: staging
+          branch: environments/staging
+        - name: prod
+          namespace: prod
+          branch: environments/prod
+  # template:
+  #   metadata:
+  #     name: 'guestbook-{{.name}}'
+  #   spec:
+  #     project: default
+  #     source:
+  #       repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
+  #       path: env-configs/{{.name}}
+  #       targetRevision: {{.branch}}
+  #     destination:
+  #       server: https://kubernetes.default.svc
+  #       namespace: {{.namespace}}
+  #     syncPolicy:
+  #       automated:
+  #         prune: true
+  #         selfHeal: true
+  template:
+    metadata:
+      name: 'guestbook-{{.name}}'
+    spec:
+      sourceHydrator:
+        drySource:
+          path: helm-guestbook
+          repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
+          targetRevision: HEAD
+        hydrateTo:
+          targetBranch: environments/{{.name}}-next
+        syncSource:
+          targetBranch: environments/{{.name}}
+          path: "{{.name}}"
+      destination:
+        namespace: guestbook-{{.namespace}}
+        server: https://kubernetes.default.svc
+      project: default
+      syncPolicy:
+        automated: {}

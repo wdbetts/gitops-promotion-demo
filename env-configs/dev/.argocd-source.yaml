@@ -1,5 +1,0 @@
-helm:
-  chart: ../../helm-guestbook  # Relative path to the common chart
-  valueFiles:
-    - ../../helm-guestbook/values.yaml
-    - ../../helm-guestbook/values-dev.yaml

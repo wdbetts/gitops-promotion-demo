@@ -1,0 +1,6 @@
+helm:
+  namespace: dev
+  releaseName: guestbook-dev
+  valueFiles:
+    - values.yaml
+    - values-dev.yaml

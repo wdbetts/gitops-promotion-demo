@@ -1,0 +1,6 @@
+helm:
+  namespace: prod
+  releaseName: guestbook-prod
+  valueFiles:
+    - values.yaml
+    - values-prod.yaml

@@ -1,0 +1,6 @@
+helm:
+  namespace: staging
+  releaseName: guestbook-staging
+  valueFiles:
+    - values.yaml
+    - values-staging.yaml

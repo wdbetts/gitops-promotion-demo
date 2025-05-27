@@ -8,13 +8,20 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: staging
+  source:
+    repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
+    path: env-configs/staging
   syncPolicy:
     automated: {}
   sourceHydrator:
     drySource:
       repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
       targetRevision: environments/dev # This is the branch where the staging environment is based on
-      path: env-configs/staging
+      path: helm-guestbook
     syncSource:
       targetBranch: environments/staging
       path: env-configs/staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
