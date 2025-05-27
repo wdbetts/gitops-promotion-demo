@@ -52,7 +52,7 @@ spec:
               value: 1.0.0
             - name: APP_ENVIRONMENT
               value: prod
-          image: localhost:5000/gitops-demo-app:1.0.0
+          image: localhost:5111/gitops-demo-app:1.0.0
           imagePullPolicy: IfNotPresent
           name: guestbook
           ports:
