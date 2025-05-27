@@ -3,7 +3,7 @@ revisionHistoryLimit: 3
 
 image:
   repository: quay.io/argoprojlabs/argocd-e2e-container
-  tag: "0.2"
+  tag: "0.3"
   pullPolicy: IfNotPresent
 
 nameOverride: ""
