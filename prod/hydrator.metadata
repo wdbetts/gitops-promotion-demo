@@ -1,5 +1,7 @@
 {
   "repoURL": "https://github.com/wdbetts/gitops-promotion-demo.git",
   "drySha": "a7a3639bfe274ea145b90ceebf8b493446e47628",
-  "commands": null
+  "commands": [
+    "helm template . --name-template guestbook-prod --include-crds"
+  ]
 }
