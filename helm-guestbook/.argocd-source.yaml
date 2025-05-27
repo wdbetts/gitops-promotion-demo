@@ -1,0 +1,4 @@
+helm:
+  valueFiles:
+    - values.yaml
+    - values-dev.yaml

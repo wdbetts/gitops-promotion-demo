@@ -13,11 +13,8 @@ spec:
   sourceHydrator:
     drySource:
       repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
-      targetRevision: environments/staging
-      path: helm-guestbook
-      helm:
-        valueFiles:
-          - values-prod.yaml
+      targetRevision: environments/staging # This is the branch where the prod environment is based on
+      path: env-configs/prod
     syncSource:
       targetBranch: environments/prod
-      path: helm-guestbook
+      path: env-configs/prod

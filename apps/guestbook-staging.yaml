@@ -13,11 +13,8 @@ spec:
   sourceHydrator:
     drySource:
       repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
-      targetRevision: environments/dev
-      path: helm-guestbook
-      helm:
-        valueFiles:
-          - values-staging.yaml
+      targetRevision: environments/dev # This is the branch where the staging environment is based on
+      path: env-configs/staging
     syncSource:
       targetBranch: environments/staging
-      path: helm-guestbook
+      path: env-configs/staging
