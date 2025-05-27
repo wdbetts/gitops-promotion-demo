@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: helm-guestbook-staging
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  syncPolicy:
+    automated: {}
+  sourceHydrator:
+    drySource:
+      repoURL: https://github.com/wdbetts/gitops-promotion-demo.git
+      targetRevision: environments/dev
+      path: helm-guestbook
+      helm:
+        valueFiles:
+          - values-staging.yaml
+    syncSource:
+      targetBranch: environments/staging
+      path: helm-guestbook
