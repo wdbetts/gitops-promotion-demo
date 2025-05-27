@@ -6,13 +6,13 @@ replicaCount: 1
 
 image:
   repository: quay.io/argoprojlabs/argocd-e2e-container
-  tag: 0.1
+  tag: 0.2
   pullPolicy: IfNotPresent
 
 containerPort: 80
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 80
 
 ingress:
