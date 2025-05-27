@@ -36,6 +36,8 @@ spec:
   template:
     metadata:
       name: 'guestbook-{{.name}}'
+      labels:
+        app: guestbook # This label is used to match the application in the ArgoCDCommitStatus
     spec:
       sourceHydrator:
         drySource:
