@@ -71,6 +71,12 @@ app.get('/', (req, res) => {
         color: ${config.versionColor};
         margin: 20px 0;
         ${appEnvironment === 'prod' ? 'padding: 10px; border: 2px solid #27ae60; border-radius: 6px; display: inline-block;' : ''}
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
       }
       .description {
         color: ${appEnvironment === 'prod' ? '#546e7a' : '#7f8c8d'};

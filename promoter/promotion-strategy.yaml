@@ -1,0 +1,17 @@
+apiVersion: promoter.argoproj.io/v1alpha1
+kind: PromotionStrategy
+metadata:
+  name: demo-promotion
+  namespace: default
+spec:
+  # activeCommitStatuses:
+  #   - key: argocd-app-health
+  environments:
+  - branch: environments/dev
+    autoMerge: true
+  - branch: environments/staging
+    autoMerge: true
+  - branch: environments/prod
+    autoMerge: true
+  gitRepositoryRef:
+    name: demo-repo

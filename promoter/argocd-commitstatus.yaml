@@ -1,0 +1,11 @@
+apiVersion: promoter.argoproj.io/v1alpha1
+kind: ArgoCDCommitStatus
+metadata:
+  name: demo-promotion
+  namespace: default
+spec:
+  promotionStrategyRef:
+    name: demo-promotion
+  applicationSelector:
+    matchLabels:
+      app: guestbook

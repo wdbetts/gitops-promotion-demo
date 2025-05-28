@@ -1,0 +1,23 @@
+apiVersion: promoter.argoproj.io/v1alpha1
+kind: ScmProvider
+metadata:
+  name: github-provider
+  namespace: default
+spec:
+  secretRef:
+    name: github-app-credentials
+  github:
+    appID: 1321014
+    installationID: 68293662
+---
+apiVersion: promoter.argoproj.io/v1alpha1
+kind: GitRepository
+metadata:
+  name: demo-repo
+  namespace: default
+spec:
+  github:
+    name: gitops-promotion-demo
+    owner: wdbetts
+  scmProviderRef:
+    name: github-provider
