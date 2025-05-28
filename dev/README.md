@@ -7,6 +7,6 @@ To hydrate the manifests in this repository, run the following commands:
 
 git clone https://github.com/wdbetts/gitops-promotion-demo.git
 # cd into the cloned directory
-git checkout 4b9e7abd3bdbe17d9c1d825e3a3043f4fa80bc63
+git checkout 04ef9ebec825c5e3b7f2699f8a25228ae99d902c
 helm template . --name-template guestbook-dev --namespace dev --values ./helm-guestbook/values.yaml --values ./helm-guestbook/values-dev.yaml --include-crds
 ```
