@@ -1,5 +1,5 @@
 # Production Environment Values
-replicaCount: 3
+replicaCount: 1
 revisionHistoryLimit: 5
 
 image:
