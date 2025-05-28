@@ -34,7 +34,7 @@ metadata:
     helm.sh/chart: guestbook-0.1.0
   name: guestbook-prod
 spec:
-  replicas: 3
+  replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
