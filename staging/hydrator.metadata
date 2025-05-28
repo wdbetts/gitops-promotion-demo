@@ -1,6 +1,6 @@
 {
   "repoURL": "https://github.com/wdbetts/gitops-promotion-demo.git",
-  "drySha": "29f9f54cdc8cfa03afca963f22093218370f5278",
+  "drySha": "4b9e7abd3bdbe17d9c1d825e3a3043f4fa80bc63",
   "commands": [
     "helm template . --name-template guestbook-staging --namespace staging --values ./helm-guestbook/values.yaml --values ./helm-guestbook/values-staging.yaml --include-crds"
   ]
