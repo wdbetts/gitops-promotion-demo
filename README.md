@@ -2,6 +2,8 @@
 
 This project demonstrates GitOps-based promotion of an application through different environments using locally built Docker images.
 
+[Codelab site](https://wdbetts.github.io/gitops-promotion-demo/)
+
 ## Components
 
 - **App**: A simple Node.js application displaying its version number and environment
