@@ -57,70 +57,53 @@
       </google-codelab-step>
     
       <google-codelab-step label="Step 3: Setting up the Environment" duration="0">
-        <h2 is-upgraded>Clone the Repository</h2>
-<p>Clone the demo repository which contains all the necessary application code and Helm charts:</p>
-<pre><code language="language-bash" class="language-bash">git clone https://github.com/argoproj-labs/gitops-promotion-demo.git
-cd gitops-promotion-demo
-</code></pre>
-<h2 is-upgraded>Fork the Repository on GitHub</h2>
-<p>To work through this tutorial, you&#39;ll need your own copy of the repository on GitHub:</p>
+        <h2 is-upgraded>Clone and Fork the Repository</h2>
 <ol type="1">
+<li>Fork the repository on GitHub:<ul>
 <li>Go to https://github.com/argoproj-labs/gitops-promotion-demo</li>
 <li>Click the &#34;Fork&#34; button in the top right</li>
 <li>Follow the prompts to create a fork in your account</li>
+</ul>
+</li>
+<li>Clone your fork locally:</li>
 </ol>
-<p>Once forked, update your local repository to point to your fork:</p>
 <pre><code language="language-bash" class="language-bash"># Replace YOUR_GITHUB_USERNAME with your actual GitHub username
-git remote set-url origin https://github.com/YOUR_GITHUB_USERNAME/gitops-promotion-demo.git
+git clone https://github.com/YOUR_GITHUB_USERNAME/gitops-promotion-demo.git
+cd gitops-promotion-demo
 </code></pre>
-<p>Now you have your own copy of the repository with all the necessary application code and Helm charts ready to use.</p>
+<p>The repository already contains all necessary files including:</p>
+<ul>
+<li><strong>Application code</strong> in <code>app/</code> directory with Dockerfile and package.json</li>
+<li><strong>Helm chart</strong> in <code>helm-guestbook/</code> with environment-specific values files</li>
+<li><strong>Build script </strong><code>build-and-push.sh</code> for creating Docker images</li>
+<li><strong>GitOps Promoter configs</strong> in <code>promoter/</code> directory</li>
+</ul>
 
 
       </google-codelab-step>
     
       <google-codelab-step label="Step 4: Installing Core Components" duration="0">
         <h2 is-upgraded>Install ArgoCD with Source Hydrator</h2>
-<ol type="1">
-<li>Install ArgoCD with the Source Hydrator plugin:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash"># Create argocd namespace
+<pre><code language="language-bash" class="language-bash"># Create argocd namespace and install ArgoCD with Source Hydrator
 kubectl create namespace argocd
-
-# Install ArgoCD with Source Hydrator
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install-with-hydrator.yaml
-</code></pre>
-<ol type="1" start="2">
-<li>Wait for ArgoCD pods to be ready:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash">kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
-</code></pre>
-<ol type="1" start="3">
-<li>Access the ArgoCD UI:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash"># Port forward the ArgoCD server
+
+# Wait for ArgoCD to be ready
+kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+
+# Get the initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=&#34;{.data.password}&#34; | base64 -d
+
+# Access ArgoCD UI (in a separate terminal)
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 </code></pre>
-<ol type="1" start="4">
-<li>Get the initial admin password:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash"># Get the password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=&#34;{.data.password}&#34; | base64 -d
-</code></pre>
-<ol type="1" start="5">
-<li>Access the ArgoCD UI at https://localhost:8080 and log in with username <code>admin</code> and the password from the previous step.</li>
-</ol>
+<p>Access the ArgoCD UI at https://localhost:8080 with username <code>admin</code> and the password from above.</p>
 <h2 is-upgraded>Install GitOps Promoter</h2>
-<ol type="1">
-<li>Install GitOps Promoter using the latest release:</li>
-</ol>
 <pre><code language="language-bash" class="language-bash">kubectl apply -f https://github.com/argoproj-labs/gitops-promoter/releases/download/v0.4.0/install.yaml
+
+# Verify installation
+kubectl get pods -n promoter-system
 </code></pre>
-<ol type="1" start="2">
-<li>Verify the installation:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash">kubectl get pods -n promoter-system
-</code></pre>
-<p>Wait until all pods are in the <code>Running</code> state.</p>
 
 
       </google-codelab-step>
@@ -129,645 +112,139 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=&#34;{.data
         <h2 is-upgraded>Create a GitHub App</h2>
 <ol type="1">
 <li>Navigate to GitHub: Settings &gt; Developer settings &gt; GitHub Apps &gt; New GitHub App</li>
-<li>Fill in the following: <ul>
+<li>Fill in the required fields: <ul>
 <li>GitHub App name: <code>GitOps Promoter Demo</code></li>
-<li>Homepage URL: Can be your repository URL</li>
-<li>Webhook URL: Leave blank for this demo</li>
-<li>Webhook secret: Leave blank for this demo</li>
-<li>Repository permissions: <ul>
-<li>Contents: Read &amp; write</li>
-<li>Pull requests: Read &amp; write</li>
-<li>Commit statuses: Read &amp; write</li>
+<li>Homepage URL: Your repository URL</li>
+<li>Repository permissions: Contents (Read &amp; write), Pull requests (Read &amp; write), Commit statuses (Read &amp; write)</li>
+<li>Install only on your account</li>
 </ul>
 </li>
-<li>Where can this GitHub App be installed? Choose &#34;Only on this account&#34;</li>
-</ul>
-</li>
-<li>Click &#34;Create GitHub App&#34;</li>
-<li>Note the &#34;App ID&#34; from the app page</li>
-<li>Generate a private key by clicking &#34;Generate a private key&#34; and save the downloaded file</li>
-<li>Install the app on your repository by clicking &#34;Install App&#34; and select your <code>gitops-promotion-demo</code> repository</li>
+<li>Click &#34;Create GitHub App&#34; and note the <strong>App ID</strong></li>
+<li>Generate and download a <strong>private key</strong></li>
+<li>Install the app on your forked repository</li>
 </ol>
-<h2 is-upgraded>Create Kubernetes Secrets for GitHub App Credentials</h2>
-<p>Create a secret containing the GitHub App&#39;s private key:</p>
-<pre><code language="language-bash" class="language-bash"># Create a temporary directory for safety
-mkdir -p ~/tmp
+<h2 is-upgraded>Configure GitOps Promoter Resources</h2>
+<p>The repository includes template files in the <code>promoter/</code> directory. Update them with your credentials:</p>
+<pre><code language="language-bash" class="language-bash"># Create secret with your GitHub App private key
+kubectl create secret generic github-app-credentials \
+  --from-file=githubAppPrivateKey=/path/to/your/downloaded-key.pem
 
-# Move the private key to this directory
-mv ~/Downloads/gitops-promoter-demo*.pem ~/tmp/gitops-promoter-demo.private-key.pem
+# Update git-resources.yaml with your GitHub App ID and username
+sed -i &#39;s/YOUR_GITHUB_APP_ID/YOUR_ACTUAL_APP_ID/&#39; promoter/git-resources.yaml
+sed -i &#39;s/YOUR_GITHUB_USERNAME/YOUR_ACTUAL_USERNAME/&#39; promoter/git-resources.yaml
 
-# Create the secret YAML file
-cat &gt; promoter/github-app-secret.yaml &lt;&lt; EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: github-app-credentials
-  namespace: default
-type: Opaque
-data:
-  githubAppPrivateKey: &#34;$(cat ~/tmp/gitops-promoter-demo.private-key.pem | base64 -w 0)&#34;
-EOF
-
-# Apply the secret
-kubectl apply -f promoter/github-app-secret.yaml
-</code></pre>
-<h2 is-upgraded>Create SCM Provider and GitRepository Resources</h2>
-<p>Create the necessary GitOps Promoter resources:</p>
-<pre><code language="language-bash" class="language-bash"># Create git-resources.yaml (replace with your actual App ID and GitHub username)
-cat &gt; promoter/git-resources.yaml &lt;&lt; EOF
-apiVersion: promoter.argoproj.io/v1alpha1
-kind: ScmProvider
-metadata:
-  name: github-provider
-  namespace: default
-spec:
-  type: github
-  github:
-    appID: YOUR_GITHUB_APP_ID
-    baseURL: &#34;&#34;
-  secretRef:
-    name: github-app-credentials
----
-apiVersion: promoter.argoproj.io/v1alpha1
-kind: GitRepository
-metadata:
-  name: demo-repo
-  namespace: default
-spec:
-  url: https://github.com/YOUR_GITHUB_USERNAME/gitops-promotion-demo.git
-  scmProviderRef:
-    name: github-provider
-EOF
-
-# Update with your actual values and apply
+# Apply GitOps Promoter configuration
 kubectl apply -f promoter/git-resources.yaml
-</code></pre>
-<h2 is-upgraded>Create the Promotion Strategy</h2>
-<p>Define the promotion strategy for your environments:</p>
-<pre><code language="language-bash" class="language-bash"># Create promotion-strategy.yaml
-cat &gt; promoter/promotion-strategy.yaml &lt;&lt; EOF
-apiVersion: promoter.argoproj.io/v1alpha1
-kind: PromotionStrategy
-metadata:
-  name: demo-promotion
-  namespace: default
-spec:
-  # activeCommitStatuses:
-  #   - key: argocd-app-health
-  environments:
-  - branch: environments/dev
-    autoMerge: true
-  - branch: environments/staging
-    autoMerge: true
-  - branch: environments/prod
-    autoMerge: true
-  gitRepositoryRef:
-    name: demo-repo
-EOF
-
-# Apply the promotion strategy
 kubectl apply -f promoter/promotion-strategy.yaml
-</code></pre>
-<h2 is-upgraded>Configure ArgoCD Status Reporting</h2>
-<p>Enable status reporting from ArgoCD to GitHub:</p>
-<pre><code language="language-bash" class="language-bash"># Create argocd-commitstatus.yaml
-cat &gt; promoter/argocd-commitstatus.yaml &lt;&lt; EOF
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: argocd-cm
-  namespace: argocd
-  labels:
-    app.kubernetes.io/name: argocd-cm
-    app.kubernetes.io/part-of: argocd
-data:
-  statusbadge.enabled: &#34;true&#34;
-  reposerver.commit.verification.enabled: &#34;false&#34;
-EOF
-
-# Apply the ConfigMap
 kubectl apply -f promoter/argocd-commitstatus.yaml
 </code></pre>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="Step 6: Preparing the Application" duration="0">
-        <h2 is-upgraded>Node.js Application Structure</h2>
-<p>Create a simple Node.js application that displays its version and environment:</p>
-<pre><code language="language-bash" class="language-bash"># Create app.js
-cat &gt; app/app.js &lt;&lt; EOF
-const express = require(&#39;express&#39;);
-const app = express();
-const port = process.env.PORT || 3000;
-
-const version = process.env.APP_VERSION || &#39;1.0.0&#39;;
-const environment = process.env.APP_ENVIRONMENT || &#39;development&#39;;
-
-// Set up a basic HTML template with environment-specific styling
-const getPageColor = () =&gt; {
-  switch(environment) {
-    case &#39;prod&#39;: return &#39;#28a745&#39;; // Green for production
-    case &#39;staging&#39;: return &#39;#ffc107&#39;; // Yellow for staging
-    case &#39;dev&#39;: return &#39;#17a2b8&#39;; // Blue for development
-    default: return &#39;#6c757d&#39;; // Grey for unknown
-  }
-};
-
-app.get(&#39;/&#39;, (req, res) =&gt; {
-  const color = getPageColor();
-  res.send(`
-    &lt;!DOCTYPE html&gt;
-    &lt;html&gt;
-    &lt;head&gt;
-      &lt;title&gt;GitOps Demo App&lt;/title&gt;
-      &lt;style&gt;
-        body {
-          font-family: Arial, sans-serif;
-          background-color: ${color};
-          color: white;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          margin: 0;
-        }
-        .container {
-          text-align: center;
-          background-color: rgba(0, 0, 0, 0.3);
-          padding: 40px;
-          border-radius: 8px;
-        }
-        h1 {
-          font-size: 48px;
-          margin-bottom: 10px;
-        }
-        p {
-          font-size: 24px;
-          margin: 10px 0;
-        }
-      &lt;/style&gt;
-    &lt;/head&gt;
-    &lt;body&gt;
-      &lt;div class=&#34;container&#34;&gt;
-        &lt;h1&gt;GitOps Demo App&lt;/h1&gt;
-        &lt;p&gt;Version: ${version}&lt;/p&gt;
-        &lt;p&gt;Environment: ${environment}&lt;/p&gt;
-      &lt;/div&gt;
-    &lt;/body&gt;
-    &lt;/html&gt;
-  `);
-});
-
-app.listen(port, () =&gt; {
-  console.log(\`App running on port \${port}\`);
-  console.log(\`Version: \${version}, Environment: \${environment}\`);
-});
-EOF
-</code></pre>
-<h2 is-upgraded>Dockerfile for the Application</h2>
-<p>Create a Dockerfile to containerize the application:</p>
-<pre><code language="language-bash" class="language-bash"># Create Dockerfile
-cat &gt; app/Dockerfile &lt;&lt; EOF
-FROM node:slim
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-ENV APP_VERSION=1.0.0
-EXPOSE 8080
-
-# Start the application
-CMD [&#34;node&#34;, &#34;app.js&#34;]
-
-EOF
-</code></pre>
-<h2 is-upgraded>Package.json</h2>
-<p>Create a package.json file for the Node.js application:</p>
-<pre><code language="language-bash" class="language-bash"># Create package.json
-cat &gt; app/package.json &lt;&lt; EOF
-{
-  &#34;name&#34;: &#34;gitops-demo-app&#34;,
-  &#34;version&#34;: &#34;1.0.0&#34;,
-  &#34;description&#34;: &#34;Simple demo app for GitOps promotion workflow&#34;,
-  &#34;main&#34;: &#34;app.js&#34;,
-  &#34;scripts&#34;: {
-    &#34;start&#34;: &#34;node app.js&#34;
-  },
-  &#34;dependencies&#34;: {
-    &#34;express&#34;: &#34;^4.17.1&#34;
-  }
-}
-EOF
-</code></pre>
-<h2 is-upgraded>Create Build and Push Script</h2>
-<p>Create a script to build and push the Docker image:</p>
-<pre><code language="language-bash" class="language-bash"># Create build-and-push.sh
-cat &gt; build-and-push.sh &lt;&lt; EOF
-#!/bin/bash
-
-# Check if a version parameter was provided
-if [ -z &#34;\$1&#34; ]; then
-  echo &#34;Usage: \$0 &lt;version&gt;&#34;
-  echo &#34;Example: \$0 1.0.0&#34;
-  exit 1
-fi
-
-VERSION=&#34;\$1&#34;
-REGISTRY=&#34;localhost:5111&#34;
-IMAGE_NAME=&#34;gitops-demo-app&#34;
-
-echo &#34;Building and pushing application image version \$VERSION...&#34;
-
-# Build the base image
-echo &#34;Building \$REGISTRY/\$IMAGE_NAME:\$VERSION&#34;
-docker build -t \$REGISTRY/\$IMAGE_NAME:\$VERSION ./app
-
-# Push the image
-echo &#34;Pushing \$REGISTRY/\$IMAGE_NAME:\$VERSION&#34;
-docker push \$REGISTRY/\$IMAGE_NAME:\$VERSION
-
-echo &#34;Done! Image is available at \$REGISTRY/\$IMAGE_NAME:\$VERSION&#34;
-EOF
-
-# Make the script executable
-chmod +x build-and-push.sh
-</code></pre>
-<p>Build the initial version of your application:</p>
-<pre><code language="language-bash" class="language-bash"># Build and push version 1.0.0
+      <google-codelab-step label="Step 6: Building and Deploying the Application" duration="0">
+        <h2 is-upgraded>Build the Application Image</h2>
+<p>The repository includes a ready-to-use Node.js application and build script:</p>
+<pre><code language="language-bash" class="language-bash"># Build and push the application image
 ./build-and-push.sh 1.0.0
 </code></pre>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Step 7: Configuring ArgoCD Applications with Source Hydrator" duration="0">
-        <h2 is-upgraded>Create the Helm Chart</h2>
-<p>Create a Helm chart for deploying the application:</p>
-<pre><code language="language-bash" class="language-bash"># Create Chart.yaml
-cat &gt; helm-guestbook/Chart.yaml &lt;&lt; EOF
-apiVersion: v2
-name: gitops-demo
-description: A Helm chart for GitOps Promotion Demo
-type: application
-version: 0.1.0
-appVersion: &#34;1.0.0&#34;
-EOF
-
-# Create values.yaml (default values)
-cat &gt; helm-guestbook/values.yaml &lt;&lt; EOF
-replicaCount: 1
-
-image:
-  repository: localhost:5000/gitops-demo-app
-  pullPolicy: Always
-  tag: &#34;1.0.0&#34;
-
-nameOverride: &#34;&#34;
-fullnameOverride: &#34;&#34;
-
-environment: dev
-
-service:
-  type: NodePort
-  port: 80
-  targetPort: 3000
-
-resources:
-  limits:
-    cpu: 100m
-    memory: 128Mi
-  requests:
-    cpu: 50m
-    memory: 64Mi
-EOF
-
-# Create environment-specific values files
-cat &gt; helm-guestbook/values-dev.yaml &lt;&lt; EOF
-environment: dev
-image:
-  tag: &#34;1.0.0&#34;
-EOF
-
-cat &gt; helm-guestbook/values-staging.yaml &lt;&lt; EOF
-environment: staging
-image:
-  tag: &#34;1.0.0&#34;
-EOF
-
-cat &gt; helm-guestbook/values-prod.yaml &lt;&lt; EOF
-environment: prod
-image:
-  tag: &#34;1.0.0&#34;
-EOF
-
-# Create deployment.yaml
-mkdir -p helm-guestbook/templates
-cat &gt; helm-guestbook/templates/deployment.yaml &lt;&lt; EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: &#123;&#123; include &#34;gitops-demo.fullname&#34; . }}
-  labels:
-    &#123;&#123;- include &#34;gitops-demo.labels&#34; . | nindent 4 }}
-spec:
-  replicas: &#123;&#123; .Values.replicaCount }}
-  selector:
-    matchLabels:
-      &#123;&#123;- include &#34;gitops-demo.selectorLabels&#34; . | nindent 6 }}
-  template:
-    metadata:
-      labels:
-        &#123;&#123;- include &#34;gitops-demo.selectorLabels&#34; . | nindent 8 }}
-    spec:
-      containers:
-        - name: &#123;&#123; .Chart.Name }}
-          image: &#34;&#123;&#123; .Values.image.repository }}:&#123;&#123; .Values.image.tag | default .Chart.AppVersion }}&#34;
-          imagePullPolicy: &#123;&#123; .Values.image.pullPolicy }}
-          env:
-            - name: APP_VERSION
-              value: &#34;&#123;&#123; .Values.image.tag | default .Chart.AppVersion }}&#34;
-            - name: APP_ENVIRONMENT
-              value: &#34;&#123;&#123; .Values.environment }}&#34;
-          ports:
-            - name: http
-              containerPort: 3000
-              protocol: TCP
-          resources:
-            &#123;&#123;- toYaml .Values.resources | nindent 12 }}
-EOF
-
-# Create service.yaml
-cat &gt; helm-guestbook/templates/service.yaml &lt;&lt; EOF
-apiVersion: v1
-kind: Service
-metadata:
-  name: &#123;&#123; include &#34;gitops-demo.fullname&#34; . }}
-  labels:
-    &#123;&#123;- include &#34;gitops-demo.labels&#34; . | nindent 4 }}
-spec:
-  type: &#123;&#123; .Values.service.type }}
-  ports:
-    - port: &#123;&#123; .Values.service.port }}
-      targetPort: &#123;&#123; .Values.service.targetPort }}
-      protocol: TCP
-      name: http
-  selector:
-    &#123;&#123;- include &#34;gitops-demo.selectorLabels&#34; . | nindent 4 }}
-EOF
-
-# Create _helpers.tpl
-cat &gt; helm-guestbook/templates/_helpers.tpl &lt;&lt; EOF
-&#123;&#123;/*
-Expand the name of the chart.
-*/}}
-&#123;&#123;- define &#34;gitops-demo.name&#34; -}}
-&#123;&#123;- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix &#34;-&#34; }}
-&#123;&#123;- end }}
-
-&#123;&#123;/*
-Create a default fully qualified app name.
-*/}}
-&#123;&#123;- define &#34;gitops-demo.fullname&#34; -}}
-&#123;&#123;- if .Values.fullnameOverride }}
-&#123;&#123;- .Values.fullnameOverride | trunc 63 | trimSuffix &#34;-&#34; }}
-&#123;&#123;- else }}
-&#123;&#123;- \$name := default .Chart.Name .Values.nameOverride }}
-&#123;&#123;- if contains \$name .Release.Name }}
-&#123;&#123;- .Release.Name | trunc 63 | trimSuffix &#34;-&#34; }}
-&#123;&#123;- else }}
-&#123;&#123;- printf &#34;%s-%s&#34; .Release.Name \$name | trunc 63 | trimSuffix &#34;-&#34; }}
-&#123;&#123;- end }}
-&#123;&#123;- end }}
-&#123;&#123;- end }}
-
-&#123;&#123;/*
-Create chart name and version as used by the chart label.
-*/}}
-&#123;&#123;- define &#34;gitops-demo.chart&#34; -}}
-&#123;&#123;- printf &#34;%s-%s&#34; .Chart.Name .Chart.Version | replace &#34;+&#34; &#34;_&#34; | trunc 63 | trimSuffix &#34;-&#34; }}
-&#123;&#123;- end }}
-
-&#123;&#123;/*
-Common labels
-*/}}
-&#123;&#123;- define &#34;gitops-demo.labels&#34; -}}
-helm.sh/chart: &#123;&#123; include &#34;gitops-demo.chart&#34; . }}
-&#123;&#123; include &#34;gitops-demo.selectorLabels&#34; . }}
-&#123;&#123;- if .Chart.AppVersion }}
-app.kubernetes.io/version: &#123;&#123; .Chart.AppVersion | quote }}
-&#123;&#123;- end }}
-app.kubernetes.io/managed-by: &#123;&#123; .Release.Service }}
-&#123;&#123;- end }}
-
-&#123;&#123;/*
-Selector labels
-*/}}
-&#123;&#123;- define &#34;gitops-demo.selectorLabels&#34; -}}
-app.kubernetes.io/name: &#123;&#123; include &#34;gitops-demo.name&#34; . }}
-app.kubernetes.io/instance: &#123;&#123; .Release.Name }}
-&#123;&#123;- end }}
-EOF
-</code></pre>
-<h2 is-upgraded>Set up ArgoCD Source Hydrator Configuration</h2>
-<p>Create ArgoCD Source Hydrator configuration files for each environment:</p>
-<pre><code language="language-bash" class="language-bash"># Create the Source Hydrator configuration for dev
-cat &gt; helm-guestbook/.argocd-source-dev.yaml &lt;&lt; EOF
-helm:
-  parameters:
-  - name: environment
-    value: dev
-  valuesFiles:
-  - values-dev.yaml
-EOF
-
-# Create the Source Hydrator configuration for staging
-cat &gt; helm-guestbook/.argocd-source-staging.yaml &lt;&lt; EOF
-helm:
-  parameters:
-  - name: environment
-    value: staging
-  valuesFiles:
-  - values-staging.yaml
-EOF
-
-# Create the Source Hydrator configuration for prod
-cat &gt; helm-guestbook/.argocd-source-prod.yaml &lt;&lt; EOF
-helm:
-  parameters:
-  - name: environment
-    value: prod
-  valuesFiles:
-  - values-prod.yaml
-EOF
-</code></pre>
-<h2 is-upgraded>Create ArgoCD Application Manifest</h2>
-<p>Create the ApplicationSet manifest for ArgoCD:</p>
-<pre><code language="language-bash" class="language-bash"># Create namespaces for each environment
-kubectl create namespace dev
-kubectl create namespace staging
-kubectl create namespace prod
-
-# Create the ApplicationSet manifest
-cat &gt; guestbook-appset.yaml &lt;&lt; EOF
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: guestbook
-  namespace: argocd
-spec:
-  generators:
-  - list:
-      elements:
-      - name: dev
-        appName: helm-guestbook-dev
-        namespace: dev
-        hydrationPath: .argocd-source-dev.yaml
-      - name: staging
-        appName: helm-guestbook-staging
-        namespace: staging
-        hydrationPath: .argocd-source-staging.yaml
-      - name: prod
-        appName: helm-guestbook-prod
-        namespace: prod
-        hydrationPath: .argocd-source-prod.yaml
-  template:
-    metadata:
-      name: &#39;&#123;&#123;appName}}&#39;
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/YOUR_GITHUB_USERNAME/gitops-promotion-demo.git
-        targetRevision: environments/&#123;&#123;name}}
-        path: helm-guestbook
-        plugin:
-          name: argocd-lovely-plugin-source-hydrator
-          env:
-          - name: CONFIG_PATH
-            value: &#39;&#123;&#123;hydrationPath}}&#39;
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: &#39;&#123;&#123;namespace}}&#39;
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-EOF
-
-# Replace YOUR_GITHUB_USERNAME with your actual username
-# Update and apply the ApplicationSet
-kubectl apply -f guestbook-appset.yaml
-</code></pre>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Step 8: Demonstrating the Promotion Workflow" duration="0">
-        <h2 is-upgraded>Initial Deployment</h2>
-<p>First, create the environment branches and push them to GitHub:</p>
-<pre><code language="language-bash" class="language-bash"># Create environment branches based on main
+<p>This creates a Docker image that displays different content based on environment variables (<code>APP_VERSION</code> and <code>APP_ENVIRONMENT</code>).</p>
+<h2 is-upgraded>Create Environment Branches and Deploy</h2>
+<pre><code language="language-bash" class="language-bash"># Create environment branches
 git branch -f environments/dev HEAD
 git branch -f environments/staging environments/dev
 git branch -f environments/prod environments/staging
-
-# Push branches to GitHub
 git push origin environments/dev environments/staging environments/prod -f
+
+# Create Kubernetes namespaces
+kubectl create namespace guestbook-dev
+kubectl create namespace guestbook-staging
+kubectl create namespace guestbook-prod
+
+# Update ApplicationSet with your GitHub username
+sed -i &#39;s/wdbetts/YOUR_GITHUB_USERNAME/&#39; guestbook-appset.yaml
+
+# Deploy ArgoCD ApplicationSet
+kubectl apply -f guestbook-appset.yaml
 </code></pre>
-<p>Now verify that ArgoCD has synced the applications:</p>
-<pre><code language="language-bash" class="language-bash"># Check the ArgoCD UI or use CLI
-kubectl get applications -n argocd
-</code></pre>
-<p>Access the dev application:</p>
-<pre><code language="language-bash" class="language-bash"># Get the NodePort of the dev service
-DEV_PORT=$(kubectl get svc -n dev gitops-demo-dev-guestbook -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39;)
-echo &#34;Dev application available at: http://localhost:$DEV_PORT&#34;
-</code></pre>
-<h2 is-upgraded>Promoting to Staging</h2>
-<p>To promote from dev to staging:</p>
-<pre><code language="language-bash" class="language-bash"># Push the dev branch to staging
-git push origin environments/dev:environments/staging -f
-</code></pre>
-<p>GitOps Promoter will detect this change and create a pull request (if configured that way) or directly update the staging branch. ArgoCD will then automatically sync the staging environment.</p>
-<p>Verify the staging application:</p>
-<pre><code language="language-bash" class="language-bash"># Get the NodePort of the staging service
-STAGING_PORT=$(kubectl get svc -n staging gitops-demo-staging-guestbook -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39;)
-echo &#34;Staging application available at: http://localhost:$STAGING_PORT&#34;
-</code></pre>
-<h2 is-upgraded>Promoting to Production</h2>
-<p>To promote from staging to production:</p>
-<pre><code language="language-bash" class="language-bash"># Push the staging branch to production
-git push origin environments/staging:environments/prod -f
-</code></pre>
-<p>Again, GitOps Promoter will handle the change and ArgoCD will sync the production environment.</p>
-<p>Verify the production application:</p>
-<pre><code language="language-bash" class="language-bash"># Get the NodePort of the prod service
-PROD_PORT=$(kubectl get svc -n prod gitops-demo-prod-guestbook -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39;)
-echo &#34;Production application available at: http://localhost:$PROD_PORT&#34;
+<h2 is-upgraded>Access Your Applications</h2>
+<pre><code language="language-bash" class="language-bash"># Get service URLs for each environment
+DEV_PORT=$(kubectl get svc -n guestbook-dev guestbook-dev -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+STAGING_PORT=$(kubectl get svc -n guestbook-staging guestbook-staging -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+PROD_PORT=$(kubectl get svc -n guestbook-prod guestbook-prod -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+
+echo &#34;Applications will be available at:&#34;
+echo &#34;Dev: http://localhost:$DEV_PORT&#34;
+echo &#34;Staging: http://localhost:$STAGING_PORT&#34;
+echo &#34;Production: http://localhost:$PROD_PORT&#34;
 </code></pre>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="Step 9: Making a Change and Promoting" duration="0">
-        <p>Let&#39;s make a change to the application and promote it through the environments:</p>
-<ol type="1">
-<li>Update the application version:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash"># Edit app/app.js to make a visible change
-# For example, change the version display or add a new feature
-
-# Build and push a new version of the application
-./build-and-push.sh 1.0.1
+      <google-codelab-step label="Step 7: Demonstrating Promotion Workflow" duration="0">
+        <h2 is-upgraded>Promote to Staging</h2>
+<pre><code language="language-bash" class="language-bash"># Promote dev to staging
+git push origin environments/dev:environments/staging -f
 </code></pre>
-<ol type="1" start="2">
-<li>Update the dev environment to use the new version:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash"># Update the values-dev.yaml file to use the new image tag
-sed -i &#39;&#39; &#39;s/tag: &#34;1.0.0&#34;/tag: &#34;1.0.1&#34;/&#39; helm-guestbook/values-dev.yaml
+<h2 is-upgraded>Promote to Production</h2>
+<pre><code language="language-bash" class="language-bash"># Promote staging to production
+git push origin environments/staging:environments/prod -f
+</code></pre>
+<p>ArgoCD will automatically sync each environment as changes are promoted. You can observe the differences in the web applications - each environment displays its name and version with different styling.</p>
 
-# Commit and push the changes
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 8: Making Changes and Promoting" duration="0">
+        <h2 is-upgraded>Update Application Version</h2>
+<pre><code language="language-bash" class="language-bash"># Build new version
+./build-and-push.sh 1.0.1
+
+# Update dev environment values
+sed -i &#39;s/tag: &#34;1.0.0&#34;/tag: &#34;1.0.1&#34;/&#39; helm-guestbook/values-dev.yaml
+
+# Commit and push changes
 git add helm-guestbook/values-dev.yaml
 git commit -m &#34;Update dev environment to version 1.0.1&#34;
 git push origin main
 
-# Update the dev environment branch
+# Update dev branch and promote through environments
 git branch -f environments/dev HEAD
 git push origin environments/dev -f
-</code></pre>
-<ol type="1" start="3">
-<li>ArgoCD will automatically sync the dev environment with the new version. Verify in the ArgoCD UI or by accessing the application URL.</li>
-<li>Promote to staging using the same process as before:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash">git push origin environments/dev:environments/staging -f
-</code></pre>
-<ol type="1" start="5">
-<li>Finally, promote to production:</li>
-</ol>
-<pre><code language="language-bash" class="language-bash">git push origin environments/staging:environments/prod -f
+
+# Promote to staging
+git push origin environments/dev:environments/staging -f
+
+# Promote to production
+git push origin environments/staging:environments/prod -f
 </code></pre>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="Step 10: Conclusion and Next Steps" duration="0">
-        <p>Congratulations! You&#39;ve successfully set up a GitOps promotion workflow using ArgoCD with Source Hydrator and GitOps Promoter. This system provides:</p>
+      <google-codelab-step label="Step 9: Conclusion" duration="0">
+        <p>Congratulations! You&#39;ve successfully implemented a GitOps promotion workflow with:</p>
 <ul>
-<li>Automated synchronization of applications across environments</li>
-<li>Environment-specific configuration through Helm values</li>
-<li>Promotion workflow with optional approval gates</li>
-<li>Visibility into application status across environments</li>
+<li><strong>Automated deployments</strong> through ArgoCD with Source Hydrator</li>
+<li><strong>Environment-specific configurations</strong> using Helm values</li>
+<li><strong>Promotion workflow</strong> managed by GitOps Promoter</li>
+<li><strong>Branch-based environment strategy</strong> for clear change tracking</li>
+</ul>
+<h2 is-upgraded>Key Benefits</h2>
+<ul>
+<li><strong>Consistency</strong>: Same application code deployed across all environments</li>
+<li><strong>Traceability</strong>: Git history shows exactly what was promoted when</li>
+<li><strong>Rollback capability</strong>: Easy to revert to previous versions</li>
+<li><strong>Automated sync</strong>: ArgoCD ensures environments stay in sync with Git</li>
 </ul>
 <h2 is-upgraded>Next Steps</h2>
-<p>To enhance this setup further, you could:</p>
-<ol type="1">
-<li>Add automated testing as part of the promotion process</li>
-<li>Implement canary deployments or blue/green deployments</li>
-<li>Set up notifications for successful deployments or failures</li>
-<li>Create a dashboard to visualize the status of all environments</li>
-<li>Add metrics and monitoring to track application performance</li>
-</ol>
-<p>Remember, GitOps is about more than just automating deployments—it&#39;s about ensuring consistency, reliability, and auditability across your entire infrastructure.</p>
+<ul>
+<li>Add automated testing before promotions</li>
+<li>Implement approval gates for production deployments</li>
+<li>Set up monitoring and alerting</li>
+<li>Explore canary and blue/green deployment strategies</li>
+</ul>
 
 
       </google-codelab-step>
