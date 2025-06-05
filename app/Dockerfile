@@ -13,7 +13,8 @@ RUN npm install
 COPY . .
 
 # Version can be overridden at build time
-ENV APP_VERSION=1.0.0
+ARG APP_VERSION=1.0.0
+ENV APP_VERSION=${APP_VERSION}
 
 # Expose the port
 EXPOSE 8080
