@@ -1,0 +1,20 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-06-05T16:12:36Z",
+  "id": "gitops-promotion",
+  "duration": 0,
+  "title": "GitOps Promotion with ArgoCD and Source Hydrator Tutorial",
+  "authors": "GitOps Team",
+  "summary": "GitOps Promotion with ArgoCD and Source Hydrator",
+  "source": "tutorial/gitops_promotion_codelab.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": null,
+  "tags": [],
+  "url": "gitops-promotion"
+}
