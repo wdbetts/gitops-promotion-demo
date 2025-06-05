@@ -1,0 +1,261 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>GitOps Promotion with ArgoCD and Source Hydrator Tutorial</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="gitops-promotion"
+                  title="GitOps Promotion with ArgoCD and Source Hydrator Tutorial"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="Step 1: Introduction" duration="0">
+        <p>This tutorial demonstrates how to implement a GitOps-based promotion workflow using ArgoCD with Source Hydrator and GitOps Promoter. You&#39;ll learn how to automate the promotion of applications from development to staging to production environments while maintaining a clear change history and approval process.</p>
+<p>The demo showcases:</p>
+<ul>
+<li>Environment branch-based deployment strategy</li>
+<li>Automated synchronization between environments</li>
+<li>Separate configuration for development, staging, and production</li>
+<li>Pull request-based promotion workflow with automated checks</li>
+</ul>
+<p>By the end of this tutorial, you&#39;ll have a fully functional GitOps promotion pipeline running in your local Kubernetes cluster.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: Prerequisites" duration="0">
+        <p>Before starting this tutorial, ensure you have the following tools installed:</p>
+<ul>
+<li><strong>kubectl</strong> - Command-line tool for interacting with Kubernetes clusters</li>
+<li><strong>k3d</strong> or <strong>Docker Desktop with Kubernetes</strong> - For running a local Kubernetes cluster</li>
+<li><strong>GitHub Account</strong> - Required for repository hosting and GitHub App creation</li>
+<li><strong>git</strong> - Version control system</li>
+<li><strong>helm</strong> - Package manager for Kubernetes</li>
+</ul>
+<p>You&#39;ll also need an existing local Kubernetes cluster. This tutorial was tested with Docker Desktop&#39;s Kubernetes feature, but any local cluster should work.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 3: Setting up the Environment" duration="0">
+        <h2 is-upgraded>Clone and Fork the Repository</h2>
+<ol type="1">
+<li>Fork the repository on GitHub:<ul>
+<li>Go to https://github.com/argoproj-labs/gitops-promotion-demo</li>
+<li>Click the &#34;Fork&#34; button in the top right</li>
+<li>Follow the prompts to create a fork in your account</li>
+</ul>
+</li>
+<li>Clone your fork locally:</li>
+</ol>
+<pre><code language="language-bash" class="language-bash"># Replace YOUR_GITHUB_USERNAME with your actual GitHub username
+git clone https://github.com/YOUR_GITHUB_USERNAME/gitops-promotion-demo.git
+cd gitops-promotion-demo
+</code></pre>
+<p>The repository already contains all necessary files including:</p>
+<ul>
+<li><strong>Application code</strong> in <code>app/</code> directory with Dockerfile and package.json</li>
+<li><strong>Helm chart</strong> in <code>helm-guestbook/</code> with environment-specific values files</li>
+<li><strong>Build script </strong><code>build-and-push.sh</code> for creating Docker images</li>
+<li><strong>GitOps Promoter configs</strong> in <code>promoter/</code> directory</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 4: Installing Core Components" duration="0">
+        <h2 is-upgraded>Install ArgoCD with Source Hydrator</h2>
+<pre><code language="language-bash" class="language-bash"># Create argocd namespace and install ArgoCD with Source Hydrator
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install-with-hydrator.yaml
+
+# Wait for ArgoCD to be ready
+kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+
+# Get the initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=&#34;{.data.password}&#34; | base64 -d
+
+# Access ArgoCD UI (in a separate terminal)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+</code></pre>
+<p>Access the ArgoCD UI at https://localhost:8080 with username <code>admin</code> and the password from above.</p>
+<h2 is-upgraded>Install GitOps Promoter</h2>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f https://github.com/argoproj-labs/gitops-promoter/releases/download/v0.4.0/install.yaml
+
+# Verify installation
+kubectl get pods -n promoter-system
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 5: Configuring GitOps Promoter" duration="0">
+        <h2 is-upgraded>Create a GitHub App</h2>
+<ol type="1">
+<li>Navigate to GitHub: Settings &gt; Developer settings &gt; GitHub Apps &gt; New GitHub App</li>
+<li>Fill in the required fields: <ul>
+<li>GitHub App name: <code>GitOps Promoter Demo</code></li>
+<li>Homepage URL: Your repository URL</li>
+<li>Repository permissions: Contents (Read &amp; write), Pull requests (Read &amp; write), Commit statuses (Read &amp; write)</li>
+<li>Install only on your account</li>
+</ul>
+</li>
+<li>Click &#34;Create GitHub App&#34; and note the <strong>App ID</strong></li>
+<li>Generate and download a <strong>private key</strong></li>
+<li>Install the app on your forked repository</li>
+</ol>
+<h2 is-upgraded>Configure GitOps Promoter Resources</h2>
+<p>The repository includes template files in the <code>promoter/</code> directory. Update them with your credentials:</p>
+<pre><code language="language-bash" class="language-bash"># Create secret with your GitHub App private key
+kubectl create secret generic github-app-credentials \
+  --from-file=githubAppPrivateKey=/path/to/your/downloaded-key.pem
+
+# Update git-resources.yaml with your GitHub App ID and username
+sed -i &#39;s/YOUR_GITHUB_APP_ID/YOUR_ACTUAL_APP_ID/&#39; promoter/git-resources.yaml
+sed -i &#39;s/YOUR_GITHUB_USERNAME/YOUR_ACTUAL_USERNAME/&#39; promoter/git-resources.yaml
+
+# Apply GitOps Promoter configuration
+kubectl apply -f promoter/git-resources.yaml
+kubectl apply -f promoter/promotion-strategy.yaml
+kubectl apply -f promoter/argocd-commitstatus.yaml
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 6: Building and Deploying the Application" duration="0">
+        <h2 is-upgraded>Build the Application Image</h2>
+<p>The repository includes a ready-to-use Node.js application and build script:</p>
+<pre><code language="language-bash" class="language-bash"># Build and push the application image
+./build-and-push.sh 1.0.0
+</code></pre>
+<p>This creates a Docker image that displays different content based on environment variables (<code>APP_VERSION</code> and <code>APP_ENVIRONMENT</code>).</p>
+<h2 is-upgraded>Create Environment Branches and Deploy</h2>
+<pre><code language="language-bash" class="language-bash"># Create environment branches
+git branch -f environments/dev HEAD
+git branch -f environments/staging environments/dev
+git branch -f environments/prod environments/staging
+git push origin environments/dev environments/staging environments/prod -f
+
+# Create Kubernetes namespaces
+kubectl create namespace guestbook-dev
+kubectl create namespace guestbook-staging
+kubectl create namespace guestbook-prod
+
+# Update ApplicationSet with your GitHub username
+sed -i &#39;s/wdbetts/YOUR_GITHUB_USERNAME/&#39; guestbook-appset.yaml
+
+# Deploy ArgoCD ApplicationSet
+kubectl apply -f guestbook-appset.yaml
+</code></pre>
+<h2 is-upgraded>Access Your Applications</h2>
+<pre><code language="language-bash" class="language-bash"># Get service URLs for each environment
+DEV_PORT=$(kubectl get svc -n guestbook-dev guestbook-dev -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+STAGING_PORT=$(kubectl get svc -n guestbook-staging guestbook-staging -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+PROD_PORT=$(kubectl get svc -n guestbook-prod guestbook-prod -o jsonpath=&#39;{.spec.ports[0].nodePort}&#39; 2&gt;/dev/null || echo &#34;Not ready yet&#34;)
+
+echo &#34;Applications will be available at:&#34;
+echo &#34;Dev: http://localhost:$DEV_PORT&#34;
+echo &#34;Staging: http://localhost:$STAGING_PORT&#34;
+echo &#34;Production: http://localhost:$PROD_PORT&#34;
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 7: Demonstrating Promotion Workflow" duration="0">
+        <h2 is-upgraded>Promote to Staging</h2>
+<pre><code language="language-bash" class="language-bash"># Promote dev to staging
+git push origin environments/dev:environments/staging -f
+</code></pre>
+<h2 is-upgraded>Promote to Production</h2>
+<pre><code language="language-bash" class="language-bash"># Promote staging to production
+git push origin environments/staging:environments/prod -f
+</code></pre>
+<p>ArgoCD will automatically sync each environment as changes are promoted. You can observe the differences in the web applications - each environment displays its name and version with different styling.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 8: Making Changes and Promoting" duration="0">
+        <h2 is-upgraded>Update Application Version</h2>
+<pre><code language="language-bash" class="language-bash"># Build new version
+./build-and-push.sh 1.0.1
+
+# Update dev environment values
+sed -i &#39;s/tag: &#34;1.0.0&#34;/tag: &#34;1.0.1&#34;/&#39; helm-guestbook/values-dev.yaml
+
+# Commit and push changes
+git add helm-guestbook/values-dev.yaml
+git commit -m &#34;Update dev environment to version 1.0.1&#34;
+git push origin main
+
+# Update dev branch and promote through environments
+git branch -f environments/dev HEAD
+git push origin environments/dev -f
+
+# Promote to staging
+git push origin environments/dev:environments/staging -f
+
+# Promote to production
+git push origin environments/staging:environments/prod -f
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 9: Conclusion" duration="0">
+        <p>Congratulations! You&#39;ve successfully implemented a GitOps promotion workflow with:</p>
+<ul>
+<li><strong>Automated deployments</strong> through ArgoCD with Source Hydrator</li>
+<li><strong>Environment-specific configurations</strong> using Helm values</li>
+<li><strong>Promotion workflow</strong> managed by GitOps Promoter</li>
+<li><strong>Branch-based environment strategy</strong> for clear change tracking</li>
+</ul>
+<h2 is-upgraded>Key Benefits</h2>
+<ul>
+<li><strong>Consistency</strong>: Same application code deployed across all environments</li>
+<li><strong>Traceability</strong>: Git history shows exactly what was promoted when</li>
+<li><strong>Rollback capability</strong>: Easy to revert to previous versions</li>
+<li><strong>Automated sync</strong>: ArgoCD ensures environments stay in sync with Git</li>
+</ul>
+<h2 is-upgraded>Next Steps</h2>
+<ul>
+<li>Add automated testing before promotions</li>
+<li>Implement approval gates for production deployments</li>
+<li>Set up monitoring and alerting</li>
+<li>Explore canary and blue/green deployment strategies</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
