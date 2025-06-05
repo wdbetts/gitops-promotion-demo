@@ -1,0 +1,67 @@
+name: Publish Codelab to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'tutorial/gitops_promotion_codelab.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install claat
+        run: go install github.com/googlecodelabs/tools/claat@latest
+
+      - name: Build codelab
+        run: |
+          mkdir -p docs
+          claat export -o docs tutorial/gitops_promotion_codelab.md
+          
+          # Create index.html that redirects to the codelab
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=./gitops-promotion/">
+            <title>GitOps Promotion Demo</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="./gitops-promotion/">GitOps Promotion Tutorial</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
