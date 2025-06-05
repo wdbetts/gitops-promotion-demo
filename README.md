@@ -75,3 +75,23 @@ The application adapts to each environment using environment variables:
 These variables are passed through the Helm chart's values files and control both functionality and appearance.
 
 In a real GitOps workflow, you would commit changes to the values files in your Git repository, and your GitOps tool (like Argo CD) would automatically apply the changes to your environments.
+
+## View the Tutorial as a Codelab
+
+The full tutorial is available in the Codelab format for easier step-by-step navigation.
+To build and serve it locally:
+
+1. Install the Codelabs `claat` tool (requires Go installed):
+   ```bash
+   go install github.com/googlecodelabs/tools/claat@latest
+   ```
+2. Export the Codelab HTML:
+   ```bash
+   ./build-codelab.sh
+   ```
+3. Serve the generated Codelab locally:
+   ```bash
+   claat serve codelabs/gitops-promotion
+   ```
+   Then open the printed URL in your browser.
+
